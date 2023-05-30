@@ -14,24 +14,49 @@ db = firestore.client()
 
 def start(update: Update, context: CallbackContext) -> None:
     keyboard = [
+        [InlineKeyboardButton("Agree", callback_data='agree')]
+    ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    
+    welcome_message = """Selamat datang di Crypto4You Bot!
+    
+    Crypto4You Bot memungkinkan Anda melakukan enkripsi dan dekripsi pesan menggunakan algoritma AES dan RSA.
+    
+    Panduan Penggunaan:
+    1. Klik tombol "Agree" untuk menerima Terms and Conditions.
+    2. Pilih jenis operasi, yaitu /encrypt untuk enkripsi dan /decrypt untuk dekripsi.
+    3. Pilih algoritma enkripsi/dekripsi, yaitu AES atau RSA.
+    4. Ikuti petunjuk selanjutnya sesuai dengan operasi dan algoritma yang Anda pilih.
+    
+    Silakan ikuti instruksi dan nikmati pengalaman menggunakan Crypto4You Bot!
+    """
+    
+    update.message.reply_text(welcome_message, reply_markup=reply_markup)
+
+def agree(update: Update, context: CallbackContext) -> None:
+    query = update.callback_query
+    query.answer()
+    query.message.reply_text('Terimakasih telah telah menyepakati Terms and Conditions!')
+
+    keyboard = [
         [InlineKeyboardButton("/encrypt", callback_data='encrypt'),
          InlineKeyboardButton("/decrypt", callback_data='decrypt')]
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
-    update.message.reply_text('Please choose operation:', reply_markup=reply_markup)
+    query.message.reply_text('Silahkan pilih jenis Operasi:', reply_markup=reply_markup)
 
-def button(update: Update, context: CallbackContext) -> None:
+def operation(update: Update, context: CallbackContext) -> None:
     query = update.callback_query
     query.answer()
     context.user_data['operation'] = query.data
-    query.edit_message_text(text=f"Selected operation: {query.data}")
+    query.edit_message_text(text=f"Operasi yang terpilih adalah {query.data}")
 
     keyboard = [
         [InlineKeyboardButton("AES", callback_data='AES'),
          InlineKeyboardButton("RSA", callback_data='RSA')]
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
-    query.message.reply_text('Please choose encryption algorithm:', reply_markup=reply_markup)
+    query.message.reply_text('Silahkan pilih jenis Operasi algorithma', reply_markup=reply_markup)
 
 def encrypt_command(update: Update, context: CallbackContext) -> None:
     context.user_data['operation'] = 'encrypt'
@@ -50,18 +75,18 @@ def decrypt_command(update: Update, context: CallbackContext) -> None:
          InlineKeyboardButton("RSA", callback_data='RSA')]
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
-    update.message.reply_text('Please choose encryption algorithm:', reply_markup=reply_markup)
+    update.message.reply_text('Please choose decryption algorithm:', reply_markup=reply_markup)
 
 def algorithm(update: Update, context: CallbackContext) -> None:
     query = update.callback_query
     query.answer()
     context.user_data['algorithm'] = query.data
     query.edit_message_text(text=f"Selected algorithm: {query.data}")
-    
-    if context.user_data['operation'] == 'encrypt':
-        query.message.reply_text('Please send me a message to encrypt.')
+
+    if context.user_data['algorithm'] == 'AES':
+        query.message.reply_text('Silahkan kirim pesan')
     else:
-        query.message.reply_text('Please send me an ID to decrypt.')
+        query.message.reply_text('Silahkan kirim pesan')
 
 def save(update: Update, context: CallbackContext) -> None:
     chat_id = update.message.chat_id
@@ -109,22 +134,19 @@ def save(update: Update, context: CallbackContext) -> None:
             update.message.reply_text('No encrypted text found for the provided ID.')
 
 def main() -> None:
-    updater = Updater("TOKEN LU SENDIRI", use_context=True)
+    updater = Updater("6250864096:AAE45F4WbgH5VKFAN4Myhx_lXD9YFJ3kUhM", use_context=True)
     dispatcher = updater.dispatcher
 
     dispatcher.add_handler(CommandHandler("start", start))
     dispatcher.add_handler(CommandHandler("encrypt", encrypt_command))
     dispatcher.add_handler(CommandHandler("decrypt", decrypt_command))
-    dispatcher.add_handler(MessageHandler(Filters.text & ~Filters.command, save))
-    dispatcher.add_handler(CallbackQueryHandler(button, pattern='^(encrypt|decrypt)$'))
+    dispatcher.add_handler(CallbackQueryHandler(agree, pattern='^agree$'))
+    dispatcher.add_handler(CallbackQueryHandler(operation, pattern='^(encrypt|decrypt)$'))
     dispatcher.add_handler(CallbackQueryHandler(algorithm, pattern='^(AES|RSA)$'))
+    dispatcher.add_handler(MessageHandler(Filters.text & ~Filters.command, save))
 
     updater.start_polling()
     updater.idle()
 
-
 if __name__ == '__main__':
     main()
-
-
-WAHYOOOOOOOOO
