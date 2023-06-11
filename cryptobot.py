@@ -5,10 +5,20 @@ from Crypto.PublicKey import RSA
 from Crypto.Util.Padding import pad, unpad
 import firebase_admin
 import time
-
+from dotenv import load_dotenv
+import os
 from firebase_admin import credentials, firestore
 
-cred = credentials.Certificate('./crypto4you-bot-firebase-adminsdk.json')
+load_dotenv()  # Load environment variables from .env file
+
+# Retrieve environment variables
+api_token = os.getenv('API_TOKEN')
+firebase_credentials = os.getenv('FIREBASE_CREDENTIALS')
+aes_key = os.getenv('AES_KEY')
+aes_iv = os.getenv('AES_IV')
+
+
+cred = credentials.Certificate(firebase_credentials)
 firebase_admin.initialize_app(cred)
 db = firestore.client()
 
@@ -99,7 +109,7 @@ def save(update: Update, context: CallbackContext) -> None:
     if context.user_data['operation'] == 'encrypt':
         text = text.encode('utf-8')  # convert text to bytes only when encrypting
         if context.user_data['algorithm'] == 'AES':
-            cipher = AES.new('This is a key123'.encode(), AES.MODE_CBC, 'This is an IV456'.encode())
+            cipher = AES.new(aes_key.encode(), AES.MODE_CBC, aes_iv.encode())
             encrypted_text = cipher.encrypt(pad(text, AES.block_size))  # pad text to be multiple of AES block size
         else:
             key = RSA.generate(2048)
@@ -119,7 +129,7 @@ def save(update: Update, context: CallbackContext) -> None:
         if doc.exists:
             encrypted_text = doc.to_dict().get('text')
             if context.user_data['algorithm'] == 'AES':
-                cipher = AES.new('This is a key123'.encode(), AES.MODE_CBC, 'This is an IV456'.encode())
+                cipher = AES.new(aes_key.encode(), AES.MODE_CBC, aes_iv.encode())
                 decrypted_text = unpad(cipher.decrypt(encrypted_text), AES.block_size).decode('utf-8')  # unpad decrypted text and convert it to string
             else:
                 private_key = context.user_data.get('private_key')
@@ -134,7 +144,7 @@ def save(update: Update, context: CallbackContext) -> None:
             update.message.reply_text('No encrypted text found for the provided ID.')
 
 def main() -> None:
-    updater = Updater("6250864096:AAE45F4WbgH5VKFAN4Myhx_lXD9YFJ3kUhM", use_context=True)
+    updater = Updater(api_token, use_context=True)
     dispatcher = updater.dispatcher
 
     dispatcher.add_handler(CommandHandler("start", start))
